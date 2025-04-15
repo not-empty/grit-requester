@@ -38,7 +38,7 @@ type LoginOutput struct {
 	Name  string `json:"name"`
 }
 
-conf := requester.StaticConfig{
+conf := gritrequester.StaticConfig{
 	"auth": {
 		Token:   "your-integration-token",
 		Secret:  "your-integration-secret",
@@ -47,9 +47,9 @@ conf := requester.StaticConfig{
 	},
 }
 
-client := requester.NewRequestObj(conf)
+client := gritrequester.NewRequestObj(conf)
 
-msReq := requester.MsRequest{
+msReq := gritrequester.MsRequest{
 	MSName: "auth",
 	Method: "POST",
 	Path:   "/auth/login",
@@ -59,7 +59,7 @@ msReq := requester.MsRequest{
 	},
 }
 
-resp, err := requester.DoMsRequest[LoginOutput](client, msReq, true)
+resp, err := gritrequester.DoMsRequest[LoginOutput](client, msReq, true)
 if err != nil {
 	log.Fatal("Request failed:", err)
 }
