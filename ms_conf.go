@@ -1,4 +1,4 @@
-package requesterV2
+package gritrequester
 
 import "fmt"
 
