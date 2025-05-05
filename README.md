@@ -3,6 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/not-empty/grit-requester.svg)](https://pkg.go.dev/github.com/not-empty/grit-requester)
 [![Test Coverage](https://img.shields.io/badge/test-100%25-brightgreen)](#)
 [![Go Report Card](https://goreportcard.com/badge/github.com/not-empty/grit-requester)](https://goreportcard.com/report/github.com/not-empty/grit-requester)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
 **grit-requester** is a Go library to abstract requests to microservices built using Grit.
 
@@ -101,3 +102,5 @@ go tool cover -html=coverage.out
 ## 🔧 License
 
 MIT © [Not Empty](https://github.com/not-empty)
+
+**Not Empty Foundation - Free codes, full minds**
