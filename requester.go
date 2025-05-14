@@ -21,6 +21,11 @@ type MsRequest struct {
 	Body   any
 }
 
+type ResponseData[T any] struct {
+	Data       T
+	PageCursor string
+}
+
 func NewRequestObj(conf StaticConfig) *RequesterObj {
 	return &RequesterObj{
 		Client: &http.Client{},
@@ -33,8 +38,8 @@ func DoMsRequest[ResponseBody any](
 	requester *RequesterObj,
 	msRequest MsRequest,
 	retry bool,
-) (ResponseBody, error) {
-	var responseBody ResponseBody
+) (ResponseData[ResponseBody], error) {
+	var responseData ResponseData[ResponseBody]
 
 	request, err := newRequest(
 		requester,
@@ -42,7 +47,7 @@ func DoMsRequest[ResponseBody any](
 	)
 
 	if err != nil {
-		return responseBody, err
+		return responseData, err
 	}
 
 	statusCode, response, err := execRequest[ResponseBody](requester, msRequest.MSName, request)
@@ -59,25 +64,27 @@ func execRequest[ResponseBody any](
 	requester *RequesterObj,
 	msName string,
 	request *http.Request,
-) (int, ResponseBody, error) {
-	var responseBody ResponseBody
+) (int, ResponseData[ResponseBody], error) {
+	var responseData ResponseData[ResponseBody]
 
 	response, err := requester.Client.Do(request)
 	if err != nil {
-		return 0, responseBody, err
+		return 0, responseData, err
 	}
 
 	defer response.Body.Close()
+
+	responseData.PageCursor = response.Header.Get("X-Page-Cursor")
 
 	updateServiceToken(requester, msName, response.Header)
 
 	responseBodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		return response.StatusCode, responseBody, err
+		return response.StatusCode, responseData, err
 	}
 
 	if response.StatusCode != 204 {
-		err = json.Unmarshal(responseBodyBytes, &responseBody)
+		err = json.Unmarshal(responseBodyBytes, &responseData.Data)
 	}
 
 	if err == nil && response.StatusCode > 299 {
@@ -89,7 +96,7 @@ func execRequest[ResponseBody any](
 		)
 	}
 
-	return response.StatusCode, responseBody, err
+	return response.StatusCode, responseData, err
 }
 
 func updateServiceToken(requester *RequesterObj, msName string, responseHeader http.Header) {

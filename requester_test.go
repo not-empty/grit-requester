@@ -107,8 +107,8 @@ func TestDoMsRequestSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if resp.ID != "01JRVBXTGFHF9137A738S7GMFV" {
-		t.Errorf("expected id 01JRVBXTGFHF9137A738S7GMFV, got %s", resp.ID)
+	if resp.Data.ID != "01JRVBXTGFHF9137A738S7GMFV" {
+		t.Errorf("expected id 01JRVBXTGFHF9137A738S7GMFV, got %s", resp.Data.ID)
 	}
 }
 
@@ -175,8 +175,8 @@ func TestDoMsRequestRetryUnauthorized(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if resp.ID != "01JRVBXTGFHF9137A738S7GMFV" {
-		t.Errorf("expected id 01JRVBXTGFHF9137A738S7GMFV, got %s", resp.ID)
+	if resp.Data.ID != "01JRVBXTGFHF9137A738S7GMFV" {
+		t.Errorf("expected id 01JRVBXTGFHF9137A738S7GMFV, got %s", resp.Data.ID)
 	}
 
 	if countRetryUnauthorized != 1 {
@@ -596,5 +596,134 @@ func TestUpdateServiceToken_UpdatesIfDifferent(t *testing.T) {
 	token, _ := tokenCache.Get("auth")
 	if token != "new-token" {
 		t.Errorf("expected token to be updated to 'new-token', got '%s'", token)
+	}
+}
+
+func TestRequestReturnsPageCursor(t *testing.T) {
+	mockClient := &MockClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			var resp string
+			var statusCode int
+
+			if req.URL.Path == "/user/list" {
+				resp = `{"id":"01JRVBXTGFHF9137A738S7GMFV"}`
+				statusCode = 200
+			} else {
+				resp = ""
+				statusCode = 204
+			}
+
+			return &http.Response{
+				StatusCode: statusCode,
+				Body:       io.NopCloser(strings.NewReader(resp)),
+				Header: http.Header{
+					"X-Token":       []string{"mock-token"},
+					"X-Page-Cursor": []string{"dGVzdF9wYWdlX2N1cnNvcg=="},
+				},
+			}, nil
+		},
+	}
+
+	conf := StaticConfig{
+		"mock": MSAuthConf{
+			Token:   "token",
+			Secret:  "secret",
+			Context: "ctx",
+			BaseUrl: "http://fake.com",
+		},
+	}
+
+	r := &RequesterObj{
+		Client: mockClient,
+		Token:  NewTokenCache(),
+		Confs:  conf,
+	}
+
+	type Output struct {
+		ID string `json:"id"`
+	}
+
+	msReq := MsRequest{
+		MSName: "mock",
+		Method: "GET",
+		Path:   "/user/list",
+		Body:   nil,
+	}
+
+	resp, err := DoMsRequest[Output](r, msReq, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.Data.ID != "01JRVBXTGFHF9137A738S7GMFV" {
+		t.Errorf("expected id 01JRVBXTGFHF9137A738S7GMFV, got %s", resp.Data.ID)
+	}
+
+	if resp.PageCursor != "dGVzdF9wYWdlX2N1cnNvcg==" {
+		t.Errorf("Page cursor returned is diferent from expected, returned %s", resp.PageCursor)
+	}
+}
+
+func TestRequestWithoutPageCursor(t *testing.T) {
+	mockClient := &MockClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			var resp string
+			var statusCode int
+
+			if req.URL.Path == "/user/list" {
+				resp = `{"id":"01JRVBXTGFHF9137A738S7GMFV"}`
+				statusCode = 200
+			} else {
+				resp = ""
+				statusCode = 204
+			}
+
+			return &http.Response{
+				StatusCode: statusCode,
+				Body:       io.NopCloser(strings.NewReader(resp)),
+				Header: http.Header{
+					"X-Token": []string{"mock-token"},
+				},
+			}, nil
+		},
+	}
+
+	conf := StaticConfig{
+		"mock": MSAuthConf{
+			Token:   "token",
+			Secret:  "secret",
+			Context: "ctx",
+			BaseUrl: "http://fake.com",
+		},
+	}
+
+	r := &RequesterObj{
+		Client: mockClient,
+		Token:  NewTokenCache(),
+		Confs:  conf,
+	}
+
+	type Output struct {
+		ID string `json:"id"`
+	}
+
+	msReq := MsRequest{
+		MSName: "mock",
+		Method: "GET",
+		Path:   "/user/list",
+		Body:   nil,
+	}
+
+	resp, err := DoMsRequest[Output](r, msReq, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp.Data.ID != "01JRVBXTGFHF9137A738S7GMFV" {
+		t.Errorf("expected id 01JRVBXTGFHF9137A738S7GMFV, got %s", resp.Data.ID)
+	}
+
+	if len(resp.PageCursor) > 0 {
+		t.Errorf("Expected that page cursor will be empty but got: %s", resp.PageCursor)
 	}
 }
