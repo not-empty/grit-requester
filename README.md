@@ -1,8 +1,6 @@
 # grit-requester
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/not-empty/grit-requester.svg)](https://pkg.go.dev/github.com/not-empty/grit-requester)
 [![Test Coverage](https://img.shields.io/badge/test-100%25-brightgreen)](#)
-[![Go Report Card](https://goreportcard.com/badge/github.com/not-empty/grit-requester)](https://goreportcard.com/report/github.com/not-empty/grit-requester)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
 **grit-requester** is a Go library to abstract requests to microservices built using Grit.
@@ -13,6 +11,7 @@ Features:
 - 🔐 Per-service token cache with concurrency safety
 - 💉 Config and HTTP client injection (perfect for testing)
 - 📦 Full support for generics (`any`) in request/response
+- 🧠 Context-aware: all requests support context.Context for cancellation, timeouts, and APM tracing
 
 ---
 
@@ -29,43 +28,40 @@ go get github.com/not-empty/grit-requester
 ```go
 import "github.com/not-empty/grit-requester"
 
-type LoginInput struct {
-	Email string `json:"email"`
-	Pass  string `json:"password"`
+type RequestPayload struct {
+	Example string `json:"example"`
 }
 
-type LoginOutput struct {
-	Token string `json:"token"`
-	Name  string `json:"name"`
+type ResponseData struct {
+	ID string `json:"id"`
 }
 
-conf := gritrequester.StaticConfig{
-	"auth": {
-		Token:   "your-integration-token",
-		Secret:  "your-integration-secret",
-		Context: "app-test",
-		BaseUrl: "https://auth.microservice.local",
-	},
-}
+conf := gritrequester.StaticConfig{}
+conf.Set("example", gritrequester.MSAuthConf{
+	Token:   "your-integration-token",
+	Secret:  "your-integration-secret",
+	Context: "example-test",
+	BaseUrl: "https://example.microservice.local",
+})
 
 client := gritrequester.NewRequestObj(conf)
 
 msReq := gritrequester.MsRequest{
-	MSName: "auth",
+	MSName: "example",
 	Method: "POST",
-	Path:   "/auth/login",
-	Body: LoginInput{
-		Email: "test@example.com",
-		Pass:  "123456",
+	Path:   "/example/add",
+	Body: RequestPayload{
+		Example: "Example test",
 	},
 }
 
-resp, err := gritrequester.DoMsRequest[LoginOutput](client, msReq, true)
+resp, err := gritrequester.DoMsRequest[ResponseData](context.TODO(), client, msReq, true)
+
 if err != nil {
 	log.Fatal("Request failed:", err)
 }
 
-fmt.Println("Received token:", resp.Name)
+fmt.Println("Received ID:", resp.Data.ID)
 ```
 
 ---
@@ -77,14 +73,13 @@ Test coverage: **100%**
 Run tests:
 
 ```bash
-go test -v -cover ./...
+./test.sh
 ```
 
 Visualize coverage:
 
 ```bash
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
+open ./coverage/coverage-unit.html
 ```
 
 ---
