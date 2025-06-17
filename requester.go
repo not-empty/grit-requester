@@ -2,6 +2,7 @@ package gritrequester
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,6 +36,7 @@ func NewRequestObj(conf StaticConfig) *RequesterObj {
 }
 
 func DoMsRequest[ResponseBody any](
+	context context.Context,
 	requester *RequesterObj,
 	msRequest MsRequest,
 	retry bool,
@@ -42,6 +44,7 @@ func DoMsRequest[ResponseBody any](
 	var responseData ResponseData[ResponseBody]
 
 	request, err := newRequest(
+		context,
 		requester,
 		msRequest,
 	)
@@ -54,7 +57,7 @@ func DoMsRequest[ResponseBody any](
 
 	if statusCode == http.StatusUnauthorized && retry {
 		requester.Token.Delete(msRequest.MSName)
-		return DoMsRequest[ResponseBody](requester, msRequest, false)
+		return DoMsRequest[ResponseBody](context, requester, msRequest, false)
 	}
 
 	return response, err
@@ -113,6 +116,7 @@ func updateServiceToken(requester *RequesterObj, msName string, responseHeader h
 }
 
 func newRequest(
+	context context.Context,
 	requester *RequesterObj,
 	msRequest MsRequest,
 ) (*http.Request, error) {
@@ -126,7 +130,8 @@ func newRequest(
 		return nil, err
 	}
 
-	request, err := http.NewRequest(
+	request, err := http.NewRequestWithContext(
+		context,
 		msRequest.Method,
 		conf.BaseUrl+msRequest.Path,
 		bytes.NewBuffer(encodedBody),
@@ -136,7 +141,7 @@ func newRequest(
 		return nil, err
 	}
 
-	err = setRequestHeaders(requester, request, msRequest.MSName)
+	err = setRequestHeaders(context, requester, request, msRequest.MSName)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +150,7 @@ func newRequest(
 }
 
 func setRequestHeaders(
+	context context.Context,
 	requester *RequesterObj,
 	request *http.Request,
 	MSName string,
@@ -157,7 +163,7 @@ func setRequestHeaders(
 		return nil
 	}
 
-	token, err := requestMSToken(requester, MSName)
+	token, err := requestMSToken(context, requester, MSName)
 	if err != nil {
 		return err
 	}
@@ -169,7 +175,7 @@ func setRequestHeaders(
 	return nil
 }
 
-func requestMSToken(requester *RequesterObj, MSName string) (string, error) {
+func requestMSToken(context context.Context, requester *RequesterObj, MSName string) (string, error) {
 	conf, _ := requester.Confs.Get(MSName)
 
 	authPayload := map[string]string{
@@ -178,8 +184,9 @@ func requestMSToken(requester *RequesterObj, MSName string) (string, error) {
 	}
 	body, _ := json.Marshal(authPayload)
 
-	req, _ := http.NewRequest(
-		"POST",
+	req, _ := http.NewRequestWithContext(
+		context,
+		http.MethodPost,
 		conf.BaseUrl+"/auth/generate",
 		bytes.NewBuffer(body),
 	)

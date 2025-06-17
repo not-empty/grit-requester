@@ -1,6 +1,7 @@
 package gritrequester
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -66,8 +67,6 @@ func TestDoMsRequestSuccess(t *testing.T) {
 				statusCode = 204
 			}
 
-			// Simula resposta JSON válida
-
 			return &http.Response{
 				StatusCode: statusCode,
 				Body:       io.NopCloser(strings.NewReader(resp)),
@@ -102,7 +101,9 @@ func TestDoMsRequestSuccess(t *testing.T) {
 		Body:   map[string]string{"email": "test@test.com"},
 	}
 
-	resp, err := DoMsRequest[Output](r, msReq, true)
+	ctx := context.Background()
+
+	resp, err := DoMsRequest[Output](ctx, r, msReq, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -170,7 +171,9 @@ func TestDoMsRequestRetryUnauthorized(t *testing.T) {
 		Body:   map[string]string{"email": "test@test.com"},
 	}
 
-	resp, err := DoMsRequest[Output](r, msReq, true)
+	ctx := context.Background()
+
+	resp, err := DoMsRequest[Output](ctx, r, msReq, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -217,7 +220,9 @@ func TestNewRequestReturnError(t *testing.T) {
 		Body:   map[string]string{"email": "test@test.com"},
 	}
 
-	_, err := newRequest(r, msReq)
+	ctx := context.Background()
+
+	_, err := newRequest(ctx, r, msReq)
 
 	if err == nil {
 		t.Error("Expected error to create request object but got nil")
@@ -253,7 +258,9 @@ func TestNewRequestErrorToSetHeaders(t *testing.T) {
 		Body:   map[string]string{"email": "test@test.com"},
 	}
 
-	_, err := newRequest(r, msReq)
+	ctx := context.Background()
+
+	_, err := newRequest(ctx, r, msReq)
 
 	if err == nil {
 		t.Error("Expected error to create request object but got nil")
@@ -288,7 +295,9 @@ func TestDoMsRequestWithoutConfs(t *testing.T) {
 		Body:   nil,
 	}
 
-	_, err := DoMsRequest[any](r, msReq, true)
+	ctx := context.Background()
+
+	_, err := DoMsRequest[any](ctx, r, msReq, true)
 
 	if err == nil || err.Error() != "config map is empty" {
 		t.Errorf("expeted an error but but got none")
@@ -338,7 +347,9 @@ func TestDoMsRequestWithInvalidBody(t *testing.T) {
 		Body:   v,
 	}
 
-	_, err := DoMsRequest[any](r, msReq, true)
+	ctx := context.Background()
+
+	_, err := DoMsRequest[any](ctx, r, msReq, true)
 
 	if err == nil || err.Error() != "json: unsupported type: func()" {
 		t.Errorf("expeted an error but but got none")
@@ -373,7 +384,9 @@ func TestSetRequestHeadersGetFromCache(t *testing.T) {
 		strings.NewReader(`{"user":"test"}`),
 	)
 
-	err := setRequestHeaders(r, request, "mock")
+	ctx := context.Background()
+
+	err := setRequestHeaders(ctx, r, request, "mock")
 
 	if err != nil {
 		t.Errorf("Error to set request headers")
@@ -407,7 +420,10 @@ func TestRequestMSTokenRetuningInvalidResponse(t *testing.T) {
 		Confs:  conf,
 	}
 
+	ctx := context.Background()
+
 	token, err := requestMSToken(
+		ctx,
 		r,
 		"mock",
 	)
@@ -441,7 +457,8 @@ func TestExecRequestFailRequest(t *testing.T) {
 
 	r.Token.Set("mock", "token test")
 
-	request, _ := http.NewRequest(
+	request, _ := http.NewRequestWithContext(
+		context.Background(),
 		"POST",
 		"http://fake-url.com",
 		strings.NewReader(`{"user":"test"}`),
@@ -490,7 +507,8 @@ func TestExecRequestErrorInReadAll(t *testing.T) {
 
 	r.Token.Set("mock", "token test")
 
-	request, _ := http.NewRequest(
+	request, _ := http.NewRequestWithContext(
+		context.Background(),
 		"POST",
 		"http://fake-url.com",
 		strings.NewReader(`{"user":"test"}`),
@@ -530,7 +548,8 @@ func TestExecRequestResponseGreaterThan299(t *testing.T) {
 
 	r.Token.Set("mock", "token test")
 
-	request, _ := http.NewRequest(
+	request, _ := http.NewRequestWithContext(
+		context.Background(),
 		"POST",
 		"http://fake-url.com",
 		strings.NewReader(`{"user":"test"}`),
@@ -570,7 +589,7 @@ func TestUpdateServiceToken_HeaderEmpty(t *testing.T) {
 	}
 
 	headers := http.Header{}
-	headers.Set("X-Token", "") // vazio
+	headers.Set("X-Token", "")
 
 	updateServiceToken(r, "auth", headers)
 
@@ -650,7 +669,9 @@ func TestRequestReturnsPageCursor(t *testing.T) {
 		Body:   nil,
 	}
 
-	resp, err := DoMsRequest[Output](r, msReq, true)
+	ctx := context.Background()
+
+	resp, err := DoMsRequest[Output](ctx, r, msReq, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -714,7 +735,9 @@ func TestRequestWithoutPageCursor(t *testing.T) {
 		Body:   nil,
 	}
 
-	resp, err := DoMsRequest[Output](r, msReq, true)
+	ctx := context.Background()
+
+	resp, err := DoMsRequest[Output](ctx, r, msReq, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
