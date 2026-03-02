@@ -27,7 +27,47 @@ func TestNewRequestObj(t *testing.T) {
 		},
 	}
 
-	r := NewRequestObj(conf)
+	r := NewRequestObj(conf, nil)
+
+	if r == nil {
+		t.Fatal("expected non-nil RequesterObj")
+	}
+
+	if r.Client == nil {
+		t.Error("expected non-nil HTTP client")
+	}
+
+	if r.Token == nil {
+		t.Error("expected token cache to be initialized")
+	}
+
+	got, err := r.Confs.Get("auth")
+	if err != nil {
+		t.Errorf("expected config for 'auth' to exist, got error: %v", err)
+	}
+
+	if got.BaseUrl != "http://localhost" {
+		t.Errorf("expected BaseUrl to be 'http://localhost', got '%s'", got.BaseUrl)
+	}
+}
+
+func TestNewRequestObjWithClientParam(t *testing.T) {
+	conf := StaticConfig{
+		"auth": {
+			Token:   "abc",
+			Secret:  "xyz",
+			Context: "ctx",
+			BaseUrl: "http://localhost",
+		},
+	}
+
+	mockClient := &MockClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{}, nil
+		},
+	}
+
+	r := NewRequestObj(conf, mockClient)
 
 	if r == nil {
 		t.Fatal("expected non-nil RequesterObj")
