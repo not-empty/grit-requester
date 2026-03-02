@@ -26,7 +26,7 @@ func main() {
 		BaseUrl: "https://example.microservice.local",
 	})
 
-	client := gritrequester.NewRequestObj(conf)
+	client := gritrequester.NewRequestObj(conf, nil)
 
 	msReq := gritrequester.MsRequest{
 		MSName: "example",

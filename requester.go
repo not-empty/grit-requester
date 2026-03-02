@@ -27,10 +27,16 @@ type ResponseData[T any] struct {
 	PageCursor string
 }
 
-func NewRequestObj(conf StaticConfig) *RequesterObj {
+func NewRequestObj(conf StaticConfig, client HTTPClient) *RequesterObj {
+	tokenCache := NewTokenCache()
+
+	if client == nil {
+		client = &http.Client{}
+	}
+
 	return &RequesterObj{
-		Client: &http.Client{},
-		Token:  NewTokenCache(),
+		Client: client,
+		Token:  tokenCache,
 		Confs:  conf,
 	}
 }
