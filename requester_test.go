@@ -27,7 +27,7 @@ func TestNewRequestObj(t *testing.T) {
 		},
 	}
 
-	r := NewRequestObj(conf, nil)
+	r := NewRequestObj(conf)
 
 	if r == nil {
 		t.Fatal("expected non-nil RequesterObj")
@@ -67,7 +67,7 @@ func TestNewRequestObjWithClientParam(t *testing.T) {
 		},
 	}
 
-	r := NewRequestObj(conf, mockClient)
+	r := NewRequestObjWithClient(conf, mockClient)
 
 	if r == nil {
 		t.Fatal("expected non-nil RequesterObj")
